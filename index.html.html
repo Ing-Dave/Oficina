@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convertidor Educacion Continua v3</title>
+    <style>
+        :root {
+            --primary: #a71d1d;
+            --accent: #00d2ff;
+            --bg: #0f1115;
+            --surface: #1a1d24;
+            --text: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: var(--surface);
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 210, 255, 0.2);
+            width: 100%;
+            max-width: 600px;
+        }
+
+        h1 {
+            color: var(--accent);
+            margin-top: 0;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 1.8rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #94a3b8;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: #0f1115;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            color: white;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 1.25rem;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #bd2424;
+            box-shadow: 0 0 12px rgba(167, 29, 29, 0.5);
+        }
+
+        .result-box {
+            margin-top: 1.5rem;
+            display: none;
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        .result-input-container {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .btn-action {
+            padding: 0.75rem 1.25rem;
+            background-color: #334155;
+            white-space: nowrap;
+            width: auto;
+            margin-top: 0;
+        }
+
+        .btn-action:hover {
+            background-color: #475569;
+            box-shadow: none;
+        }
+
+        #downloadBtn {
+            background-color: #10b981;
+        }
+        #downloadBtn:hover {
+            background-color: #059669;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Conversor de Enlaces de Descarga</h1>
+    <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 1.5rem;">Soporta: Google Drive (Archivos y Docs), Dropbox y OneDrive.</p>
+    
+    <label for="inputUrl">Pegue el enlace de visualización:</label>
+    <input type="text" id="inputUrl" placeholder="Pegue la URL aquí...">
+    
+    <button onclick="convertirEnlace()">Procesar Enlace</button>
+
+    <div class="result-box" id="resultBox">
+        <label>Enlace de descarga directa generado:</label>
+        <div class="result-input-container">
+            <input type="text" id="outputUrl" readonly>
+            <button class="btn-action" onclick="copiarEnlace()">Copiar</button>
+        </div>
+        <button id="downloadBtn" onclick="descargarDirecto()">Probar Descarga Directa</button>
+    </div>
+</div>
+
+<script>
+function convertirEnlace() {
+    const input = document.getElementById('inputUrl').value.trim();
+    const resultBox = document.getElementById('resultBox');
+    const output = document.getElementById('outputUrl');
+    
+    if (!input) {
+        alert("Por favor, introduzca una URL válida.");
+        return;
+    }
+
+    let urlDescarga = input;
+
+    // --- NUEVA LÓGICA GOOGLE DRIVE MEJORADA ---
+    if (input.includes("drive.google.com") || input.includes("docs.google.com")) {
+        
+        // Expresión regular universal para extraer el ID del archivo
+        const regexDrive = /(?:id=|\/d\/)([a-zA-Z0-9-_]+)/;
+        const match = input.match(regexDrive);
+        
+        if (match && match[1]) {
+            const fileId = match[1];
+
+            // Caso A: Si es una Presentación de Google Slides
+            if (input.includes("/presentation")) {
+                urlDescarga = `https://docs.google.com/presentation/d/${fileId}/export/pptx`;
+            }
+            // Caso B: Si es un Documento de Google Docs
+            else if (input.includes("/document")) {
+                urlDescarga = `https://docs.google.com/document/d/${fileId}/export?format=docx`;
+            }
+            // Caso C: Si es una Hoja de Cálculo de Google Sheets
+            else if (input.includes("/spreadsheets")) {
+                urlDescarga = `https://docs.google.com/spreadsheets/d/${fileId}/export?format=xlsx`;
+            }
+            // Caso D: Si es un archivo binario normal (PDF, ZIP, Imágenes, etc.)
+            else {
+                urlDescarga = `https://docs.google.com/uc?export=download&id=${fileId}`;
+            }
+
+        } else {
+            alert("No se pudo extraer el ID del enlace de Google. Verifique la URL.");
+            return;
+        }
+    } 
+    // --- DROPBOX ---
+    else if (input.includes("dropbox.com")) {
+        if (input.includes("dl=0")) {
+            urlDescarga = input.replace("dl=0", "dl=1");
+        } else if (!input.includes("dl=1")) {
+            urlDescarga = input + (input.includes("?") ? "&dl=1" : "?dl=1");
+        }
+    } 
+    // --- ONEDRIVE ---
+    else if (input.includes("onedrive.live.com")) {
+        urlDescarga = input.replace("redir?", "download?");
+    }
+
+    output.value = urlDescarga;
+    resultBox.style.display = 'block';
+}
+
+function copiarEnlace() {
+    const output = document.getElementById('outputUrl');
+    output.select();
+    output.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(output.value);
+    alert("Enlace copiado en el portapapeles.");
+}
+
+function descargarDirecto() {
+    const url = document.getElementById('outputUrl').value;
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', ''); 
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
+
+</body>
+</html>
